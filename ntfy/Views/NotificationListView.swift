@@ -1,6 +1,7 @@
 import SwiftUI
 import UniformTypeIdentifiers
 import MarkdownUI
+import SafariServices
 
 enum ActiveAlert {
     case clear, unsubscribe, selected
@@ -252,7 +253,9 @@ struct NotificationListView: View {
 struct NotificationRowView: View {
     @EnvironmentObject private var store: Store
     @ObservedObject var notification: Notification
-    
+    @State private var showSafari = false
+    @State private var safariURL: URL?
+
     var body: some View {
         if #available(iOS 15.0, *) {
             notificationRow
@@ -263,8 +266,18 @@ struct NotificationRowView: View {
                         Label("Delete", systemImage: "trash.circle")
                     }
                 }
+                .sheet(isPresented: $showSafari) {
+                    if let url = safariURL {
+                        SafariView(url: url)
+                    }
+                }
         } else {
             notificationRow
+                .sheet(isPresented: $showSafari) {
+                    if let url = safariURL {
+                        SafariView(url: url)
+                    }
+                }
         }
     }
     
@@ -291,6 +304,11 @@ struct NotificationRowView: View {
             // Render message as Markdown for clickable links
             Markdown(notification.formatMessage())
                 .markdownTheme(.gitHub)
+                .environment(\.openURL, OpenURLAction { url in
+                    safariURL = url
+                    showSafari = true
+                    return .handled
+                })
             if !notification.nonEmojiTags().isEmpty {
                 Text("Tags: " + notification.nonEmojiTags().joined(separator: ", "))
                     .font(.subheadline)
@@ -347,5 +365,18 @@ struct NotificationListView_Previews: PreviewProvider {
                 .environmentObject(store)
         }
     }
+}
+
+// Safari View for in-app browsing
+struct SafariView: UIViewControllerRepresentable {
+    let url: URL
+
+    func makeUIViewController(context: Context) -> SFSafariViewController {
+        let safari = SFSafariViewController(url: url)
+        safari.preferredControlTintColor = .systemBlue
+        return safari
+    }
+
+    func updateUIViewController(_ uiViewController: SFSafariViewController, context: Context) {}
 }
 
