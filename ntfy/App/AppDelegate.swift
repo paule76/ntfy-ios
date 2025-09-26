@@ -1,9 +1,6 @@
 import UIKit
 import SafariServices
 import UserNotifications
-import Firebase
-import FirebaseCore
-import FirebaseMessaging
 import CoreData
 
 class AppDelegate: UIResponder, UIApplicationDelegate, ObservableObject {
@@ -16,12 +13,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate, ObservableObject {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
         Log.d(tag, "Launching AppDelegate")
 
-        FirebaseApp.configure()
-        FirebaseConfiguration.shared.setLoggerLevel(.max)
 
         // Register app permissions for push notifications
         UNUserNotificationCenter.current().delegate = self
-        Messaging.messaging().delegate = self
         
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { success, error in
             guard success else {
@@ -31,8 +25,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate, ObservableObject {
             Log.d(self.tag, "Successfully registered for local push notifications")
         }
         
-        // Register too receive remote notifications
-        application.registerForRemoteNotifications()
                 
         return true
     }
@@ -64,8 +56,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, ObservableObject {
     
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
         let token = deviceToken.map { data in String(format: "%02.2hhx", data) }.joined()
-        Messaging.messaging().apnsToken = deviceToken
-        Log.d(tag, "Registered for remote notifications. Passing APNs token to Firebase: \(token)")
+        Log.d(tag, "Registered for remote notifications. APNs token: \(token)")
     }
     
     func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
@@ -133,24 +124,21 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
     }
 }
 
-extension AppDelegate: MessagingDelegate {
-    func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
-        Log.d(tag, "Firebase token received: \(String(describing: fcmToken))")
-        
-        // Subscribe to ~poll topic
-        Messaging.messaging().subscribe(toTopic: pollTopic)
-        
-        // Re-subscribe to Firebase for all topics
-        let store = Store.shared
-        store.getSubscriptions()?.forEach{ subscription in
-            if let baseUrl = subscription.baseUrl, let topic = subscription.topic {
-                Log.d(tag, "Re-subscribing to topic \(baseUrl)/\(topic)")
-                if baseUrl == Config.appBaseUrl {
-                    Messaging.messaging().subscribe(toTopic: topic)
-                } else {
-                    Messaging.messaging().subscribe(toTopic: topicHash(baseUrl: baseUrl, topic: topic))
-                }
-            }
-        }
-    }
-}
+//         Log.d(tag, "Firebase token received: \(String(describing: fcmToken))")
+//
+//         // Subscribe to ~poll topic
+//         Messaging.messaging().subscribe(toTopic: pollTopic)
+//
+//         // Re-subscribe to Firebase for all topics
+//         let store = Store.shared
+//         store.getSubscriptions()?.forEach{ subscription in
+//             if let baseUrl = subscription.baseUrl, let topic = subscription.topic {
+//                 Log.d(tag, "Re-subscribing to topic \(baseUrl)/\(topic)")
+//                 if baseUrl == Config.appBaseUrl {
+//                     Messaging.messaging().subscribe(toTopic: topic)
+//                 } else {
+//                     Messaging.messaging().subscribe(toTopic: topicHash(baseUrl: baseUrl, topic: topic))
+//                 }
+//             }
+//         }
+//     }

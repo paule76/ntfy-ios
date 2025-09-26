@@ -1,6 +1,6 @@
 import SwiftUI
 import CoreData
-import FirebaseMessaging
+// import FirebaseMessaging
 import UserNotifications
 
 struct SubscriptionListView: View {

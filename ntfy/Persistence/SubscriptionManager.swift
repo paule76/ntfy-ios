@@ -1,33 +1,20 @@
 import Foundation
-import FirebaseMessaging
 
-/// Manager to combine persisting a subscription to the data store and subscribing to Firebase.
-/// This is to centralize the logic in one place.
+/// Manager to combine persisting a subscription to the data store.
+/// Uses local polling for notifications.
 struct SubscriptionManager {
     private let tag = "SubscriptionManager"
     var store: Store
-    
+
     func subscribe(baseUrl: String, topic: String) {
         Log.d(tag, "Subscribing to \(topicUrl(baseUrl: baseUrl, topic: topic))")
-        if baseUrl == Config.appBaseUrl {
-            Messaging.messaging().subscribe(toTopic: topic)
-        } else {
-            Messaging.messaging().subscribe(toTopic: topicHash(baseUrl: baseUrl, topic: topic))
-        }
         let subscription = store.saveSubscription(baseUrl: baseUrl, topic: topic)
         poll(subscription)
     }
-    
+
     func unsubscribe(_ subscription: Subscription) {
         Log.d(tag, "Unsubscribing from \(subscription.urlString())")
         DispatchQueue.main.async {
-            if let baseUrl = subscription.baseUrl, let topic = subscription.topic {
-                if baseUrl == Config.appBaseUrl {
-                    Messaging.messaging().unsubscribe(fromTopic: topic)
-                } else {
-                    Messaging.messaging().unsubscribe(fromTopic: topicHash(baseUrl: baseUrl, topic: topic))
-                }
-            }
             store.delete(subscription: subscription)
         }
     }

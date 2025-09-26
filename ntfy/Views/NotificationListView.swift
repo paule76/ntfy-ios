@@ -1,5 +1,6 @@
 import SwiftUI
 import UniformTypeIdentifiers
+import MarkdownUI
 
 enum ActiveAlert {
     case clear, unsubscribe, selected
@@ -287,8 +288,9 @@ struct NotificationRowView: View {
                     .bold()
                     .padding([.bottom], 2)
             }
-            Text(notification.formatMessage())
-                .font(.body)
+            // Render message as Markdown for clickable links
+            Markdown(notification.formatMessage())
+                .markdownTheme(.gitHub)
             if !notification.nonEmojiTags().isEmpty {
                 Text("Tags: " + notification.nonEmojiTags().joined(separator: ", "))
                     .font(.subheadline)
